@@ -129,6 +129,16 @@ def init_db() -> None:
                 categoria TEXT NOT NULL,
                 criada_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS lancamentos_financeiros (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data TEXT NOT NULL,
+                tipo TEXT NOT NULL DEFAULT 'despesa',
+                categoria TEXT NOT NULL,
+                valor REAL NOT NULL,
+                observacoes TEXT,
+                criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
             """
         )
         conn.commit()

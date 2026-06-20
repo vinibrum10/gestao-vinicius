@@ -1,20 +1,42 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date
 
 import streamlit as st
 
+from src.pages.common import opcoes_frentes
 from src.services.semanas_service import obter_semana_atual
-from src.services.tarefas_service import atualizar_status_tarefa, listar_tarefas
+from src.services.tarefas_service import PRIORIDADES, atualizar_status_tarefa, criar_tarefa, listar_tarefas
 
 
 def render() -> None:
     st.title("Minhas Demandas")
 
-    with st.expander("Adicionar Demanda Rápida", expanded=False):
-        st.info("Use Planejamento de Domingo para cadastrar novas demandas com área, semana e prioridade.")
-
     semana = obter_semana_atual()
+
+    with st.expander("Adicionar Demanda Rápida", expanded=False):
+        if not semana:
+            st.info("Crie a semana atual em Planejamento de Domingo antes de adicionar demandas.")
+        else:
+            _, mapa_areas = opcoes_frentes()
+            with st.form("demanda_rapida", clear_on_submit=True):
+                titulo = st.text_input("Título da demanda")
+                area = st.selectbox("Área", list(mapa_areas.keys()))
+                prioridade = st.selectbox("Prioridade", PRIORIDADES)
+                if st.form_submit_button("Salvar") and titulo.strip():
+                    criar_tarefa(
+                        semana["id"],
+                        mapa_areas[area],
+                        titulo.strip(),
+                        "",
+                        30,
+                        date.today().isoformat(),
+                        prioridade,
+                    )
+                    st.success("Demanda criada.")
+                    st.rerun()
+
     if not semana:
         st.warning("Crie a semana atual em Planejamento de Domingo para ver suas demandas.")
         return
@@ -37,7 +59,7 @@ def render() -> None:
             for demanda in demandas:
                 col_titulo, col_prioridade, col_concluir = st.columns([5, 2, 1])
                 col_titulo.write(f"**{demanda['titulo']}**")
-                col_prioridade.caption(f"Prioridade: {demanda['prioridade']}")
+                col_prioridade.caption(f"Prioridade: {demanda['prioridade']} | Status: {demanda['status']}")
                 if col_concluir.button("Concluir", key=f"concluir_demanda_{demanda['id']}"):
                     atualizar_status_tarefa(demanda["id"], "concluída", demanda["frente_id"])
                     st.rerun()

@@ -4,6 +4,7 @@ from datetime import date
 
 from src.calculations import calcular_variacao_saldo
 from src.database import execute, fetch_all, fetch_one
+from src.services.semanas_service import inicio_semana, fim_semana
 
 
 def obter_financas_semana(semana_id: int) -> dict | None:
@@ -51,16 +52,20 @@ def listar_historico_financeiro() -> list[dict]:
 
 def registrar_despesa(valor: float, categoria: str, data_despesa: str | None = None) -> int:
     return execute(
-        "INSERT INTO despesas (data, valor, categoria) VALUES (?, ?, ?)",
-        (data_despesa or date.today().isoformat(), float(valor), categoria.strip() or "Sem categoria"),
+        """
+        INSERT INTO lancamentos_financeiros (data, tipo, categoria, valor, observacoes)
+        VALUES (?, 'despesa', ?, ?, NULL)
+        """,
+        (data_despesa or date.today().isoformat(), categoria.strip() or "Sem categoria", float(valor)),
     )
 
 
 def listar_despesas_recentes(limite: int = 20) -> list[dict]:
     return fetch_all(
         """
-        SELECT id, data, valor, categoria, criada_em
-        FROM despesas
+        SELECT data, categoria, valor
+        FROM lancamentos_financeiros
+        WHERE tipo = 'despesa'
         ORDER BY data DESC, id DESC
         LIMIT ?
         """,
@@ -72,8 +77,9 @@ def total_despesas_semana(data_inicio: str, data_fim: str) -> float:
     registro = fetch_one(
         """
         SELECT COALESCE(SUM(valor), 0) AS total
-        FROM despesas
+        FROM lancamentos_financeiros
         WHERE data BETWEEN ? AND ?
+          AND tipo = 'despesa'
         """,
         (data_inicio, data_fim),
     )
@@ -81,20 +87,20 @@ def total_despesas_semana(data_inicio: str, data_fim: str) -> float:
 
 
 def obter_resumo_orcamento() -> dict:
+    inicio_atual = inicio_semana()
+    fim_atual = fim_semana(inicio_atual)
     ultimo = fetch_one(
         """
         SELECT fs.saldo_atual, s.data_inicio, s.data_fim
         FROM financas_semanais fs
         JOIN semanas s ON s.id = fs.semana_id
-        ORDER BY s.data_inicio DESC
+        ORDER BY CASE WHEN s.data_inicio = ? THEN 0 ELSE 1 END, s.data_inicio DESC
         LIMIT 1
-        """
+        """,
+        (inicio_atual.isoformat(),),
     )
-    if not ultimo:
-        return {"saldo_atual": 0.0, "gasto_semana": 0.0, "margem_livre": 0.0}
-
-    gasto_semana = total_despesas_semana(ultimo["data_inicio"], ultimo["data_fim"])
-    saldo_atual = float(ultimo["saldo_atual"] or 0)
+    saldo_atual = float(ultimo["saldo_atual"] or 0) if ultimo else 0.0
+    gasto_semana = total_despesas_semana(inicio_atual.isoformat(), fim_atual.isoformat())
     return {
         "saldo_atual": saldo_atual,
         "gasto_semana": gasto_semana,

@@ -198,3 +198,11 @@ def test_orcamento_registra_despesa_e_calcula_cashflow(banco_temporario):
     assert resumo["gasto_semana"] == 130
     assert resumo["margem_livre"] == 370
     assert recentes[0]["categoria"] == "Mercado"
+    assert list(recentes[0].keys()) == ["data", "categoria", "valor"]
+
+
+def test_banco_tem_tabela_lancamentos_financeiros(banco_temporario):
+    tabelas = database.fetch_all(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'lancamentos_financeiros'"
+    )
+    assert tabelas == [{"name": "lancamentos_financeiros"}]
