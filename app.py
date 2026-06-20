@@ -3,7 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from src.database import init_db
-from src.pages import configuracoes, financas, painel_semana, progresso, revisao_domingo, tarefas
+from src.pages import configuracoes, financas, painel_semana, progresso, revisao_domingo, tarefas, visao_diaria
 from src.seed import seed_initial_data
 
 
@@ -20,7 +20,8 @@ def main() -> None:
     pagina = st.sidebar.radio(
         "Navegação",
         [
-            "Início",
+            "Visão Diária",
+            "Resumo da Semana",
             "Planejar Semana",
             "Minhas Ações",
             "Registrar Avanço",
@@ -30,7 +31,8 @@ def main() -> None:
     )
 
     paginas = {
-        "Início": painel_semana.render,
+        "Visão Diária": visao_diaria.render,
+        "Resumo da Semana": painel_semana.render,
         "Planejar Semana": revisao_domingo.render,
         "Minhas Ações": tarefas.render,
         "Registrar Avanço": progresso.render,
