@@ -9,7 +9,14 @@ from src import database
 from src.pages.common import formatar_dataframe_para_exibicao, opcoes_semanas
 from src.seed import seed_initial_data
 from src.services.agenda_service import criar_bloco, listar_blocos
-from src.services.financas_service import listar_historico_financeiro, obter_financas_semana, salvar_financas
+from src.services.financas_service import (
+    listar_despesas_recentes,
+    listar_historico_financeiro,
+    obter_financas_semana,
+    obter_resumo_orcamento,
+    registrar_despesa,
+    salvar_financas,
+)
 from src.services.frentes_service import NomeFrenteDuplicadoError, atualizar_frente, listar_frentes, obter_frente
 from src.services.progresso_service import listar_progresso, registrar_progresso
 from src.services.semanas_service import criar_ou_atualizar_semana, obter_semana_atual
@@ -176,3 +183,18 @@ def test_fluxo_minimo_mvp_persiste_dados_apos_reabrir_conexao(banco_temporario):
     assert financas["gasto_semana"] == 130
     assert progresso[0]["resumo_acao"] == "Aula preparada"
     assert blocos[0]["titulo"] == "Bloco teste"
+
+
+def test_orcamento_registra_despesa_e_calcula_cashflow(banco_temporario):
+    frente_id = {frente["nome"]: frente for frente in listar_frentes()}["Finanças"]["id"]
+    semana_id = criar_ou_atualizar_semana("2026-06-15", frente_id, 10, 7, "moderada", "orçamento")
+    salvar_financas(semana_id, 0, 500, "", False, "")
+
+    registrar_despesa(130, "Mercado", "2026-06-20")
+    resumo = obter_resumo_orcamento()
+    recentes = listar_despesas_recentes()
+
+    assert resumo["saldo_atual"] == 500
+    assert resumo["gasto_semana"] == 130
+    assert resumo["margem_livre"] == 370
+    assert recentes[0]["categoria"] == "Mercado"

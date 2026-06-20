@@ -8,7 +8,7 @@ from src.format_utils import formatar_moeda_br
 from src.services.frentes_service import listar_frentes
 from src.services.semanas_service import inicio_semana, listar_semanas
 
-COLUNAS_MOEDA = {"gasto_semana", "saldo_atual", "variacao_saldo"}
+COLUNAS_MOEDA = {"gasto_semana", "saldo_atual", "variacao_saldo", "valor"}
 COLUNAS_TECNICAS = {
     "id",
     "semana_id",
@@ -57,6 +57,9 @@ NOMES_AMIGAVEIS = {
     "hora_inicio": "Hora início",
     "hora_fim": "Hora fim",
     "nivel_energia": "Energia",
+    "valor": "Valor",
+    "categoria": "Categoria",
+    "criada_em": "Registrada em",
 }
 
 

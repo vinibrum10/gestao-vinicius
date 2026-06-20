@@ -121,6 +121,14 @@ def init_db() -> None:
                 FOREIGN KEY (semana_id) REFERENCES semanas(id),
                 FOREIGN KEY (frente_id) REFERENCES frentes(id)
             );
+
+            CREATE TABLE IF NOT EXISTS despesas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data TEXT NOT NULL,
+                valor REAL NOT NULL,
+                categoria TEXT NOT NULL,
+                criada_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
             """
         )
         conn.commit()
