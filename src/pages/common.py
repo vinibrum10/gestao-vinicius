@@ -29,6 +29,9 @@ NOMES_AMIGAVEIS = {
     "classificacao": "Atenção",
     "dias_sem_acao": "Dias sem avanço",
     "titulo": "Ação",
+    "inicio": "Início",
+    "fim": "Fim",
+    "dia_inteiro": "Dia inteiro",
     "descricao": "Observações",
     "tempo_estimado_minutos": "Tempo estimado",
     "data_planejada": "Data planejada",
@@ -68,11 +71,13 @@ def formatar_dataframe_para_exibicao(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df = df.drop(columns=[coluna for coluna in COLUNAS_TECNICAS if coluna in df.columns])
     for coluna in df.columns:
-        if coluna.endswith("_data") or coluna in {"data", "data_inicio", "data_fim", "data_planejada", "ultima_acao_data", "concluida_em"}:
+        if coluna.endswith("_data") or coluna in {"data", "data_inicio", "data_fim", "data_planejada", "ultima_acao_data", "concluida_em", "inicio", "fim"}:
             df[coluna] = df[coluna].apply(formatar_data_br)
         if coluna in COLUNAS_MOEDA:
             df[coluna] = df[coluna].apply(formatar_moeda_br)
         if coluna == "teve_gasto_inesperado":
+            df[coluna] = df[coluna].apply(lambda valor: "Sim" if valor else "Não")
+        if coluna == "dia_inteiro":
             df[coluna] = df[coluna].apply(lambda valor: "Sim" if valor else "Não")
         if coluna in {"tempo_estimado_minutos", "minimo_semanal_minutos"}:
             df[coluna] = df[coluna].apply(lambda valor: f"{int(valor)} min" if pd.notna(valor) else "")

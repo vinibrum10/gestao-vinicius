@@ -86,26 +86,54 @@ tests/
 7. Use `Agenda Manual` para cadastrar blocos de tempo.
 8. Acompanhe tudo no `Painel da Semana`.
 
-## 10. O que ficou fora do MVP
+## 10. Google Calendar local
 
-- Google Calendar.
-- Google Cloud.
+A integração com Google Calendar é opcional e serve para sugerir o campo `Tempo real para foco` em `Planejar Semana`. O fluxo manual continua funcionando sem ela.
+
+Arquivos locais necessários:
+
+- `credentials.json`: credencial OAuth criada no Google Cloud.
+- `token.json`: gerado automaticamente após a primeira autorização.
+
+Esses arquivos ficam na raiz do projeto e não devem ir para o GitHub.
+
+### Como gerar o credentials.json
+
+1. Acesse https://console.cloud.google.com/
+2. Crie ou selecione um projeto.
+3. No menu lateral, acesse `APIs e serviços` > `Biblioteca`.
+4. Procure por `Google Calendar API` e clique em `Ativar`.
+5. Vá em `APIs e serviços` > `Tela de consentimento OAuth`.
+6. Escolha `Externo`, preencha o nome do app e salve.
+7. Em `Público-alvo` ou `Usuários de teste`, adicione seu e-mail Google.
+8. Vá em `APIs e serviços` > `Credenciais`.
+9. Clique em `Criar credenciais` > `ID do cliente OAuth`.
+10. Escolha `Aplicativo para computador`.
+11. Baixe o JSON e renomeie para `credentials.json`.
+12. Coloque o arquivo na raiz do projeto:
+
+```text
+C:\Users\Vinicius\Documents\1.0-Desenvolvimentos_Projetos\1.Gestão_Vinicius\credentials.json
+```
+
+Na primeira vez que clicar em `Sincronizar Google Calendar`, o navegador abrirá para autorização. Depois disso, o app criará `token.json` automaticamente.
+
+## 11. O que ficou fora do MVP
+
 - Supabase.
-- APIs externas.
 - Login.
 - Aplicativo mobile.
 - Sincronização entre dispositivos.
 
-## 11. Próximos passos futuros
+## 12. Próximos passos futuros
 
 - Melhorar edição completa de tarefas e blocos de agenda.
 - Criar relatórios mensais mais detalhados.
 - Adicionar exportação de dados.
 - Criar backup automático do SQLite.
-- Integrar calendário apenas quando o uso manual estiver validado.
 - Criar autenticação apenas se houver necessidade real.
 
-## 12. Como criar repositório GitHub futuramente
+## 13. Como criar repositório GitHub futuramente
 
 Quando quiser publicar no GitHub:
 

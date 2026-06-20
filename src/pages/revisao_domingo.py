@@ -6,9 +6,13 @@ import streamlit as st
 
 from src.date_utils import formatar_data_br
 from src.pages.common import dataframe, formatar_horas, opcoes_frentes
+from src.calculations import calcular_disponibilidade_real
 from src.services.financas_service import salvar_financas
-from src.services.semanas_service import PESOS_SEMANA, criar_ou_atualizar_semana, inicio_semana
+from src.services.google_calendar_service import GoogleCalendarConfigError, obter_eventos_semana
+from src.services.semanas_service import PESOS_SEMANA, criar_ou_atualizar_semana, fim_semana, inicio_semana
 from src.services.tarefas_service import PRIORIDADES, criar_tarefa
+
+HORAS_FIXAS_SEMANA_PADRAO = 0.0
 
 
 def render() -> None:
@@ -20,13 +24,36 @@ def render() -> None:
         return
 
     st.subheader("1. Semana")
+    data_inicio = st.date_input("Início da semana", value=inicio_semana(), format="DD/MM/YYYY")
+    data_fim = fim_semana(data_inicio)
+    st.caption(f"Semana de {formatar_data_br(data_inicio)} a {formatar_data_br(data_fim)}")
+
+    if "tempo_util_sugerido" not in st.session_state:
+        st.session_state["tempo_util_sugerido"] = 0.0
+
+    if st.button("Sincronizar Google Calendar"):
+        try:
+            eventos = obter_eventos_semana(data_inicio, data_fim)
+            tempo_sugerido = calcular_disponibilidade_real(eventos, HORAS_FIXAS_SEMANA_PADRAO)
+            st.session_state["tempo_util_sugerido"] = tempo_sugerido
+            st.success(f"Sugestão calculada: {formatar_horas(tempo_sugerido)} para foco nesta semana.")
+            if eventos:
+                dataframe(eventos, "Nenhum compromisso encontrado no Google Calendar.")
+        except GoogleCalendarConfigError as exc:
+            st.warning(f"{exc} Configure o Google Calendar no README e tente novamente.")
+        except Exception as exc:
+            st.error(f"Não foi possível sincronizar o Google Calendar: {exc}")
+
     with st.form("form_semana"):
-        data_inicio = st.date_input("Início da semana", value=inicio_semana(), format="DD/MM/YYYY")
-        st.caption(f"Semana começando em {formatar_data_br(data_inicio)}")
         st.subheader("2. Carga e tempo")
         peso = st.selectbox("Carga da semana", PESOS_SEMANA)
         tempo_estimado = st.number_input("Tempo livre total (horas)", min_value=0.0, step=0.5)
-        tempo_util = st.number_input("Tempo real para foco (horas)", min_value=0.0, step=0.5)
+        tempo_util = st.number_input(
+            "Tempo real para foco (horas)",
+            min_value=0.0,
+            step=0.5,
+            value=float(st.session_state.get("tempo_util_sugerido", 0.0)),
+        )
         st.subheader("3. Foco")
         foco_nome = st.selectbox("Foco principal da semana", list(mapa_frentes.keys()))
         observacoes = st.text_area("Observações da semana")

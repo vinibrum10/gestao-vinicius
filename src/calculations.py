@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import Any
 
 
@@ -68,3 +68,71 @@ def calcular_media_gasto_mensal(registros: list[dict], ano_mes: str) -> float:
         if str(item.get("data_inicio", "")).startswith(ano_mes)
     ]
     return round(sum(gastos) / len(gastos), 2) if gastos else 0.0
+
+
+def _parse_datetime(value: str | datetime | date | None) -> datetime | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, date):
+        return datetime.combine(value, time.min)
+    text = str(value).replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if isinstance(parsed, datetime):
+        return parsed
+    return None
+
+
+def _normalizar_intervalo(item: dict) -> tuple[datetime, datetime] | None:
+    inicio = _parse_datetime(item.get("inicio") or item.get("start") or item.get("data_inicio"))
+    fim = _parse_datetime(item.get("fim") or item.get("end") or item.get("data_fim"))
+    if not inicio or not fim or fim <= inicio:
+        return None
+    if inicio.tzinfo and fim.tzinfo:
+        fim = fim.astimezone(inicio.tzinfo)
+    elif inicio.tzinfo and not fim.tzinfo:
+        fim = fim.replace(tzinfo=inicio.tzinfo)
+    elif fim.tzinfo and not inicio.tzinfo:
+        inicio = inicio.replace(tzinfo=fim.tzinfo)
+    return inicio, fim
+
+
+def _horas_ocupadas_por_intervalos(intervalos: list[tuple[datetime, datetime]]) -> float:
+    if not intervalos:
+        return 0.0
+    ordenados = sorted(intervalos, key=lambda item: item[0])
+    mesclados = [ordenados[0]]
+    for inicio, fim in ordenados[1:]:
+        ultimo_inicio, ultimo_fim = mesclados[-1]
+        if inicio <= ultimo_fim:
+            mesclados[-1] = (ultimo_inicio, max(ultimo_fim, fim))
+        else:
+            mesclados.append((inicio, fim))
+    segundos = sum((fim - inicio).total_seconds() for inicio, fim in mesclados)
+    return segundos / 3600
+
+
+def calcular_disponibilidade_real(eventos_google: list[dict], horas_fixas_semana: float | int | list[dict] | None) -> float:
+    intervalos = []
+    for evento in eventos_google or []:
+        intervalo = _normalizar_intervalo(evento)
+        if intervalo:
+            intervalos.append(intervalo)
+
+    horas_fixas = 0.0
+    if isinstance(horas_fixas_semana, list):
+        for bloco in horas_fixas_semana:
+            intervalo = _normalizar_intervalo(bloco)
+            if intervalo:
+                intervalos.append(intervalo)
+            else:
+                horas_fixas += float(bloco.get("horas", 0) or 0)
+    elif horas_fixas_semana is not None:
+        horas_fixas = float(horas_fixas_semana or 0)
+
+    horas_ocupadas = _horas_ocupadas_por_intervalos(intervalos) + horas_fixas
+    return round(max(0.0, 168.0 - horas_ocupadas), 1)
