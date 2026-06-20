@@ -10,6 +10,7 @@ from src.pages.common import formatar_dataframe_para_exibicao, opcoes_semanas
 from src.seed import seed_initial_data
 from src.services.agenda_service import criar_bloco, listar_blocos
 from src.services.financas_service import (
+    atualizar_caixa_semana,
     listar_despesas_recentes,
     listar_historico_financeiro,
     obter_financas_semana,
@@ -199,6 +200,25 @@ def test_orcamento_registra_despesa_e_calcula_cashflow(banco_temporario):
     assert resumo["margem_livre"] == 370
     assert recentes[0]["categoria"] == "Mercado"
     assert list(recentes[0].keys()) == ["data", "categoria", "valor"]
+
+
+def test_atualizacao_de_caixa_usa_semana_atual_sem_select_manual(banco_temporario):
+    frente_id = {frente["nome"]: frente for frente in listar_frentes()}["Finanças"]["id"]
+    semana_id = criar_ou_atualizar_semana("2026-06-15", frente_id, 10, 7, "moderada", "orçamento")
+
+    atualizar_caixa_semana(semana_id, 800, 45)
+    atualizar_caixa_semana(semana_id, 755, 30)
+
+    resumo = obter_resumo_orcamento()
+    registro = obter_financas_semana(semana_id)
+    recentes = listar_despesas_recentes()
+
+    assert resumo["saldo_atual"] == 755
+    assert resumo["gasto_semana"] == 75
+    assert resumo["margem_livre"] == 680
+    assert registro["gasto_semana"] == 75
+    assert registro["saldo_atual"] == 755
+    assert recentes[0]["categoria"] == "Gasto rápido"
 
 
 def test_banco_tem_tabela_lancamentos_financeiros(banco_temporario):

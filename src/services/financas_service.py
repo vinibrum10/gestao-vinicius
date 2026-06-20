@@ -86,6 +86,26 @@ def total_despesas_semana(data_inicio: str, data_fim: str) -> float:
     return float(registro["total"] or 0)
 
 
+def atualizar_caixa_semana(semana_id: int, saldo_atual: float, novo_gasto: float) -> None:
+    if novo_gasto > 0:
+        registrar_despesa(novo_gasto, "Gasto rápido")
+
+    semana = fetch_one("SELECT data_inicio, data_fim FROM semanas WHERE id = ?", (semana_id,))
+    if not semana:
+        return
+
+    gasto_acumulado = total_despesas_semana(semana["data_inicio"], semana["data_fim"])
+    existente = obter_financas_semana(semana_id) or {}
+    salvar_financas(
+        semana_id,
+        gasto_acumulado,
+        saldo_atual,
+        existente.get("categoria_mais_pesada") or "Gasto rápido",
+        bool(existente.get("teve_gasto_inesperado", False)),
+        existente.get("observacoes") or "",
+    )
+
+
 def obter_resumo_orcamento() -> dict:
     inicio_atual = inicio_semana()
     fim_atual = fim_semana(inicio_atual)
